@@ -1,9 +1,9 @@
 /*******************************************************************************
-	mogenerator.m - <http://github.com/rentzsch/mogenerator>
-		Copyright (c) 2006-2009 Jonathan 'Wolf' Rentzsch: <http://rentzsch.com>
-		Some rights reserved: <http://opensource.org/licenses/mit-license.php>
-
-	***************************************************************************/
+ mogenerator.m - <http://github.com/rentzsch/mogenerator>
+ Copyright (c) 2006-2009 Jonathan 'Wolf' Rentzsch: <http://rentzsch.com>
+ Some rights reserved: <http://opensource.org/licenses/mit-license.php>
+ 
+ ***************************************************************************/
 
 #import "mogenerator.h"
 
@@ -71,7 +71,7 @@ NSString	*gCustomBaseClass;
 
 - (NSString *)_resolveKeyPathType:(NSString *)keyPath {
 	NSArray *components = [keyPath componentsSeparatedByString:@"."];
-
+    
 	// Hope the set of keys in the key path consists of solely relationships. Abort otherwise
 	
 	NSEntityDescription *entity = self;
@@ -186,7 +186,7 @@ NSString	*gCustomBaseClass;
 }
 - (NSString*)objectAttributeType {
 #if MAC_OS_X_VERSION_MAX_ALLOWED < 1050
-    #define NSTransformableAttributeType 1800
+#define NSTransformableAttributeType 1800
 #endif
     if ([self attributeType] == NSTransformableAttributeType) {
         NSString *result = [[self userInfo] objectForKey:@"attributeValueClassName"];
@@ -261,23 +261,23 @@ NSString *ApplicationSupportSubdirectoryName = @"mogenerator";
     [optionsParser setGetoptLongOnly: YES];
     DDGetoptOption optionTable[] = 
     {
-    // Long             Short   Argument options
-    {@"model",          'm',    DDGetoptRequiredArgument},
-    {@"base-class",      0,     DDGetoptRequiredArgument},
-    // For compatibility:
-    {@"baseClass",      0,      DDGetoptRequiredArgument},
-    {@"includem",       0,      DDGetoptRequiredArgument},
-    {@"template-path",  0,      DDGetoptRequiredArgument},
-    // For compatibility:
-    {@"templatePath",   0,      DDGetoptRequiredArgument},
-    {@"output-dir",     'O',    DDGetoptRequiredArgument},
-    {@"machine-dir",    'M',    DDGetoptRequiredArgument},
-    {@"human-dir",      'H',    DDGetoptRequiredArgument},
-    {@"template-group", 0,      DDGetoptRequiredArgument},
-
-    {@"help",           'h',    DDGetoptNoArgument},
-    {@"version",        0,      DDGetoptNoArgument},
-    {nil,               0,      0},
+        // Long             Short   Argument options
+        {@"model",          'm',    DDGetoptRequiredArgument},
+        {@"base-class",      0,     DDGetoptRequiredArgument},
+        // For compatibility:
+        {@"baseClass",      0,      DDGetoptRequiredArgument},
+        {@"includem",       0,      DDGetoptRequiredArgument},
+        {@"template-path",  0,      DDGetoptRequiredArgument},
+        // For compatibility:
+        {@"templatePath",   0,      DDGetoptRequiredArgument},
+        {@"output-dir",     'O',    DDGetoptRequiredArgument},
+        {@"machine-dir",    'M',    DDGetoptRequiredArgument},
+        {@"human-dir",      'H',    DDGetoptRequiredArgument},
+        {@"template-group", 0,      DDGetoptRequiredArgument},
+        
+        {@"help",           'h',    DDGetoptNoArgument},
+        {@"version",        0,      DDGetoptNoArgument},
+        {nil,               0,      0},
     };
     [optionsParser addOptionsFromTable: optionTable];
 }
@@ -301,23 +301,49 @@ NSString *ApplicationSupportSubdirectoryName = @"mogenerator";
            "Inspired by eogenerator.\n");
 }
 
+- (NSString *)currentXcodePath {
+    NSTask *task = [[NSTask alloc] init];
+    [task setLaunchPath:@"/usr/bin/xcode-select"];
+    
+    NSArray *arguments = [NSArray arrayWithObjects:@"-print-path", @"/Developer", nil];
+    [task setArguments:arguments];
+    
+    NSPipe *pipe = [NSPipe pipe];
+    [task setStandardOutput:pipe];
+    
+    NSFileHandle *file = [pipe fileHandleForReading];
+    [task launch];
+    
+    NSData *data = [file readDataToEndOfFile];
+    
+    NSString *string = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+    [task release];
+    
+    return [string autorelease];
+}
+
 - (void) setModel: (NSString *) path;
 {
     assert(!model); // Currently we only can load one model.
-
+    
     if( ![[NSFileManager defaultManager] fileExistsAtPath:path]){
         NSString * reason = [NSString stringWithFormat: @"error loading file at %@: no such file exists", path];
         DDCliParseException * e = [DDCliParseException parseExceptionWithReason: reason
                                                                        exitCode: EX_NOINPUT];
         @throw e;
     }
-
+    
     if ([[path pathExtension] isEqualToString:@"xcdatamodel"]) {
         //	We've been handed a .xcdatamodel data model, transparently compile it into a .mom managed object model.
         
         //  Find where Xcode installed momc this week.
         NSString *momc = nil;
-        if ([[NSFileManager defaultManager] fileExistsAtPath:@"/Developer/usr/bin/momc"]) { // Xcode 3.1 installs it here.
+        
+        // Ask Xcode where it's installed.
+        NSString *defaultLocation = [NSString stringWithFormat:@"%@/usr/bin/momc", [self currentXcodePath]];
+        if([[NSFileManager defaultManager] fileExistsAtPath:defaultLocation]) {
+            momc = defaultLocation;
+        } else if ([[NSFileManager defaultManager] fileExistsAtPath:@"/Developer/usr/bin/momc"]) { // Xcode 3.1 installs it here.
             momc = @"/Developer/usr/bin/momc";
         } else if ([[NSFileManager defaultManager] fileExistsAtPath:@"/Library/Application Support/Apple/Developer Tools/Plug-ins/XDCoreDataModel.xdplugin/Contents/Resources/momc"]) { // Xcode 3.0.
             momc = @"/Library/Application Support/Apple/Developer Tools/Plug-ins/XDCoreDataModel.xdplugin/Contents/Resources/momc";
@@ -358,7 +384,7 @@ NSString *ApplicationSupportSubdirectoryName = @"mogenerator";
         machineDir = outputDir;
     if (humanDir == nil)
         humanDir = outputDir;
-
+    
 	NSFileManager *fm = [NSFileManager defaultManager];
     
 	int machineFilesGenerated = 0;        
@@ -399,7 +425,7 @@ NSString *ApplicationSupportSubdirectoryName = @"mogenerator";
 			BOOL machineDirtied = NO;
 			
 			NSString *machineHFileName = [machineDir stringByAppendingPathComponent:
-                [NSString stringWithFormat:@"_%@.h", entityClassName]];
+                                          [NSString stringWithFormat:@"_%@.h", entityClassName]];
 			if (![fm regularFileExistsAtPath:machineHFileName] || ![generatedMachineH isEqualToString:[NSString stringWithContentsOfFile:machineHFileName]]) {
 				//	If the file doesn't exist or is different than what we just generated, write it out.
 				[generatedMachineH writeToFile:machineHFileName atomically:NO];
@@ -407,7 +433,7 @@ NSString *ApplicationSupportSubdirectoryName = @"mogenerator";
 				machineFilesGenerated++;
 			}
 			NSString *machineMFileName = [machineDir stringByAppendingPathComponent:
-                [NSString stringWithFormat:@"_%@.m", entityClassName]];
+                                          [NSString stringWithFormat:@"_%@.m", entityClassName]];
 			if (![fm regularFileExistsAtPath:machineMFileName] || ![generatedMachineM isEqualToString:[NSString stringWithContentsOfFile:machineMFileName]]) {
 				//	If the file doesn't exist or is different than what we just generated, write it out.
 				[generatedMachineM writeToFile:machineMFileName atomically:NO];
@@ -415,7 +441,7 @@ NSString *ApplicationSupportSubdirectoryName = @"mogenerator";
 				machineFilesGenerated++;
 			}
 			NSString *humanHFileName = [humanDir stringByAppendingPathComponent:
-                [NSString stringWithFormat:@"%@.h", entityClassName]];
+                                        [NSString stringWithFormat:@"%@.h", entityClassName]];
 			if ([fm regularFileExistsAtPath:humanHFileName]) {
 				if (machineDirtied)
 					[fm touchPath:humanHFileName];
@@ -424,9 +450,9 @@ NSString *ApplicationSupportSubdirectoryName = @"mogenerator";
 				humanFilesGenerated++;
 			}
 			NSString *humanMFileName = [humanDir stringByAppendingPathComponent:
-                [NSString stringWithFormat:@"%@.m", entityClassName]];
+                                        [NSString stringWithFormat:@"%@.m", entityClassName]];
 			NSString *humanMMFileName = [humanDir stringByAppendingPathComponent:
-                [NSString stringWithFormat:@"%@.mm", entityClassName]];
+                                         [NSString stringWithFormat:@"%@.mm", entityClassName]];
 			if (![fm regularFileExistsAtPath:humanMFileName] && [fm regularFileExistsAtPath:humanMMFileName]) {
 				//	Allow .mm human files as well as .m files.
 				humanMFileName = humanMMFileName;
@@ -441,7 +467,7 @@ NSString *ApplicationSupportSubdirectoryName = @"mogenerator";
 			}
 			
 			[mfileContent appendFormat:@"#include \"%@\"\n#include \"%@\"\n",
-                [humanMFileName lastPathComponent], [machineMFileName lastPathComponent]];
+             [humanMFileName lastPathComponent], [machineMFileName lastPathComponent]];
 		}
 	}
 	
